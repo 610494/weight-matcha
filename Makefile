@@ -35,6 +35,12 @@ test-full: ## Run all tests
 train-ljspeech: ## Train the model
 	python matcha/train.py experiment=ljspeech
 
+train-matbn: ## Train the model
+	python matcha/train.py experiment=matbn
+
+train-matbn-weight: ## Train the model
+	python matcha/train_weight.py experiment=matbn_weight
+
 train-ljspeech-min: ## Train the model with minimum memory
 	python matcha/train.py experiment=ljspeech_min_memory
 

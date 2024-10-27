@@ -4,8 +4,8 @@
 # order of defaults determines the order in which configs override each other
 defaults:
   - _self_
-  - data: matbn
-  - model: matcha
+  - data: matbn_weight
+  - model: matcha_weight
   - callbacks: default
   - logger: wandb # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   - trainer: ddp

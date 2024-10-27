@@ -24,13 +24,13 @@ critical_logger.setLevel(logging.CRITICAL)
 # Intializing the phonemizer globally significantly reduces the speed
 # now the phonemizer is not initialising at every call
 # Might be less flexible, but it is much-much faster
-global_phonemizer = phonemizer.backend.EspeakBackend(
-    language="en-us",
-    preserve_punctuation=True,
-    with_stress=True,
-    language_switch="remove-flags",
-    logger=critical_logger,
-)
+# global_phonemizer = phonemizer.backend.EspeakBackend(
+#     language="en-us",
+#     preserve_punctuation=True,
+#     with_stress=True,
+#     language_switch="remove-flags",
+#     logger=critical_logger,
+# )
 
 
 # Regular expression matching whitespace:
@@ -104,6 +104,28 @@ def english_cleaners2(text):
     phonemes = collapse_whitespace(phonemes)
     return phonemes
 
+def parse_ipa(ipa: str):
+    text = []
+    delete_chars = "\-\_\|\+"
+    # delete_chars="\+\-\|\_"
+    as_space = ""
+
+    ipa_list = re.split(r"(?<![\d])(?=[\d])|(?<=[\d])(?![\d])", ipa)
+    for word in ipa_list:
+        if word.isdigit():
+            text.append(word)
+        else:
+            if len(as_space) > 0:
+                word = re.sub(r"[{}]".format(as_space), " ", word)
+            if len(delete_chars) > 0:
+                word = re.sub(r"[{}]".format(delete_chars), "", word)
+
+            word = word.replace("，", " ， ")
+            word = re.sub(r"\s+", " ", word)
+            # word = word.replace("，", " ")
+            text.extend(word)
+
+    return text
 
 # I am removing this due to incompatibility with several version of python
 # However, if you want to use it, you can uncomment it

@@ -5,7 +5,7 @@ defaults:
   - cfm: default.yaml
   - optimizer: adam.yaml
 
-_target_: matcha.models.matcha_tts.MatchaTTS
+_target_: matcha.models.matcha_tts_weight.MatchaTTS
 n_vocab: 54
 n_spks: ${data.n_spks}
 spk_emb_dim: 64

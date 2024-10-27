@@ -116,6 +116,46 @@ class BASECFM(torch.nn.Module, ABC):
             torch.sum(mask) * u.shape[1]
         )
         return loss, y
+    
+    def compute_loss_weight(self, x1, mask, mu, spks=None, cond=None, weights=None):
+        """Computes diffusion loss
+
+        Args:
+            x1 (torch.Tensor): Target
+                shape: (batch_size, n_feats, mel_timesteps)
+            mask (torch.Tensor): target mask
+                shape: (batch_size, 1, mel_timesteps)
+            mu (torch.Tensor): output of encoder
+                shape: (batch_size, n_feats, mel_timesteps)
+            spks (torch.Tensor, optional): speaker embedding. Defaults to None.
+                shape: (batch_size, spk_emb_dim)
+
+        Returns:
+            loss: conditional flow matching loss
+            y: conditional flow
+                shape: (batch_size, n_feats, mel_timesteps)
+        """
+        b, _, t = mu.shape
+
+        # random timestep
+        t = torch.rand([b, 1, 1], device=mu.device, dtype=mu.dtype)
+        # sample noise p(x_0)
+        z = torch.randn_like(x1)
+
+        y = (1 - (1 - self.sigma_min) * t) * z + t * x1
+        u = x1 - (1 - self.sigma_min) * z
+
+        pred_u = self.estimator(y, mask, mu, t.squeeze(), spks)
+        # print(f'pred_u.shape: {pred_u.shape}')
+        # print(f'mask.shape: {mask.shape}')
+        # print(f'u.shape[1]: {u.shape[1]}')
+        loss = torch.sum(((pred_u - u) ** 2).permute(1, 2, 0) * weights) / (
+            torch.sum(mask) * u.shape[1]
+        )
+        # loss = F.mse_loss(pred_u, u, reduction="sum") / (
+        #     torch.sum(mask) * u.shape[1]
+        # )
+        return loss, y
 
 
 class CFM(BASECFM):
