@@ -78,7 +78,7 @@ def save_to_folder(filename: str, output: dict, folder: str):
 if __name__=='__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
     
-    MATCHA_CHECKPOINT = "/mnt/md1/user_wago/Matcha-TTS/logs/train/matbn_weight/runs/2024-10-24_06-06-23/checkpoints/last.ckpt"
+    MATCHA_CHECKPOINT = "/mnt/md1/user_wago/Matcha-TTS/logs/train/matbn_weight/runs/2024-10-27_05-26-54/checkpoints/last.ckpt"
     HIFIGAN_CHECKPOINT = "/mnt/md1/user_wago/hifigan/LJ_V1/generator_v1"
     OUTPUT_FOLDER = "synth_output"
     
