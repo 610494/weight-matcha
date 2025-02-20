@@ -61,28 +61,57 @@ class BaseLightningClass(LightningModule, ABC):
             weights = batch["weights"]
         else:
             weights=None
+        if "wav2vec_features" in batch:
+            wav2vec_features = batch["wav2vec_features"]
+        else:
+            wav2vec_features=None
         
         if weights is not None:
-            dur_loss, prior_loss, diff_loss, *_ = self(
-                x=x,
-                x_lengths=x_lengths,
-                y=y,
-                y_lengths=y_lengths,
-                spks=spks,
-                out_size=self.out_size,
-                durations=batch["durations"],
-                weights=weights
-            )
+            if wav2vec_features is not None:
+                dur_loss, prior_loss, diff_loss, *_ = self(
+                    x=x,
+                    x_lengths=x_lengths,
+                    y=y,
+                    y_lengths=y_lengths,
+                    spks=spks,
+                    out_size=self.out_size,
+                    durations=batch["durations"],
+                    weights=weights,
+                    wav2vec_features=wav2vec_features
+                )
+            else: 
+                dur_loss, prior_loss, diff_loss, *_ = self(
+                    x=x,
+                    x_lengths=x_lengths,
+                    y=y,
+                    y_lengths=y_lengths,
+                    spks=spks,
+                    out_size=self.out_size,
+                    durations=batch["durations"],
+                    weights=weights
+                )
         else:
-            dur_loss, prior_loss, diff_loss, *_ = self(
-                x=x,
-                x_lengths=x_lengths,
-                y=y,
-                y_lengths=y_lengths,
-                spks=spks,
-                out_size=self.out_size,
-                durations=batch["durations"],
-            )
+            if wav2vec_features is not None:
+                dur_loss, prior_loss, diff_loss, *_ = self(
+                    x=x,
+                    x_lengths=x_lengths,
+                    y=y,
+                    y_lengths=y_lengths,
+                    spks=spks,
+                    out_size=self.out_size,
+                    durations=batch["durations"],
+                    wav2vec_features=wav2vec_features
+                )
+            else:
+                dur_loss, prior_loss, diff_loss, *_ = self(
+                    x=x,
+                    x_lengths=x_lengths,
+                    y=y,
+                    y_lengths=y_lengths,
+                    spks=spks,
+                    out_size=self.out_size,
+                    durations=batch["durations"],
+                )
         return {
             "dur_loss": dur_loss,
             "prior_loss": prior_loss,
@@ -95,6 +124,8 @@ class BaseLightningClass(LightningModule, ABC):
     def training_step(self, batch: Any, batch_idx: int):
         # print(f'batch in training_step: {batch}')
         loss_dict = self.get_losses(batch)
+        # time
+        # print("train logging")
         self.log(
             "step",
             float(self.global_step),
@@ -139,12 +170,18 @@ class BaseLightningClass(LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
+        # print("finish train log")
 
         return {"loss": total_loss, "log": loss_dict}
 
     def validation_step(self, batch: Any, batch_idx: int):
         # print(f'batch in validation_step: {batch}')
+        val_batch = batch
+        val_batch["weight"] = None
+        val_batch["wav2vec_features"] = None
         loss_dict = self.get_losses(batch)
+        # time
+        # print("val logging")
         self.log(
             "sub_loss/val_dur_loss",
             loss_dict["dur_loss"],
@@ -180,6 +217,7 @@ class BaseLightningClass(LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
+        # print("finish val log")
 
         return total_loss
 
@@ -225,4 +263,7 @@ class BaseLightningClass(LightningModule, ABC):
                 # )
 
     def on_before_optimizer_step(self, optimizer):
+        # time
+        # print("grad_norm logging")
         self.log_dict({f"grad_norm/{k}": v for k, v in grad_norm(self, norm_type=2).items()})
+        # print("finish grad_norm log")

@@ -1,6 +1,6 @@
 _target_: matcha.data.text_mel_datamodule_weight_curriculum.TextMelDataModule
 name: matbn_weight_curriculum
-train_filelist_path: data/matbn/default_weight_alpha_10._less_17.txt
+train_filelist_path: data/matbn/default._less_17_uni_weight.txt
 valid_filelist_path: data/matbn/matbn_dev_weight.txt
 batch_size: 8
 num_workers: 20

@@ -12,6 +12,7 @@ from matcha.models.components.text_encoder import TextEncoder
 from matcha.utils.model import (
     denormalize,
     duration_loss_weight,
+    duration_loss_weight_frame,
     fix_len_compatibility,
     generate_path,
     sequence_mask,
@@ -150,7 +151,7 @@ class MatchaTTS(BaseLightningClass):  # 🍵
         }
 
     # todo: data will from TextMelBatchCollate in text_mel_datamodule_weight, modify it to count loss weight
-    def forward(self, x, x_lengths, y, y_lengths, spks=None, out_size=None, cond=None, durations=None, weights=None):
+    def forward(self, x, x_lengths, y, y_lengths, spks=None, out_size=None, cond=None, durations=None, weights=None, frame_weight=None):
         """
         Computes 3 losses:
             1. duration loss: loss between predicted token durations and those extracted by Monotinic Alignment Search (MAS).
@@ -201,7 +202,10 @@ class MatchaTTS(BaseLightningClass):  # 🍵
         # Compute loss between predicted log-scaled durations and those obtained from MAS
         # refered to as prior loss in the paper
         logw_ = torch.log(1e-8 + torch.sum(attn.unsqueeze(1), -1)) * x_mask
-        dur_loss = duration_loss_weight(logw, logw_, x_lengths, weights)
+        if frame_weight is not None:
+            dur_loss = duration_loss_weight_frame(logw, logw_, x_lengths, weights, frame_weight=frame_weight)
+        else: 
+            dur_loss = duration_loss_weight(logw, logw_, x_lengths, weights)
 
         # Cut a small segment of mel-spectrogram in order to increase batch size
         #   - "Hack" taken from Grad-TTS, in case of Grad-TTS, we cannot train batch size 32 on a 24GB GPU without it
@@ -236,11 +240,42 @@ class MatchaTTS(BaseLightningClass):  # 🍵
 
         # Compute loss of the decoder
         # diff_loss, _ = self.decoder.compute_loss(x1=y, mask=y_mask, mu=mu_y, spks=spks, cond=cond)
-        diff_loss, _ = self.decoder.compute_loss_weight(x1=y, mask=y_mask, mu=mu_y, spks=spks, cond=cond, weights=weights)
+        diff_loss, _ = self.decoder.compute_loss_weight(x1=y, mask=y_mask, mu=mu_y, spks=spks, cond=cond, weights=weights, frame_weight=frame_weight)
 
         if self.prior_loss:
-            prior_loss = torch.sum((0.5 * ((y - mu_y) ** 2 + math.log(2 * math.pi)) * y_mask).permute(1, 2, 0) * weights)
-            prior_loss = prior_loss / (torch.sum(y_mask) * self.n_feats)
+            if frame_weight is not None:
+                B, _, T = y.shape  # B 為 batch_size, T 為時間長度
+                prior_loss = torch.zeros(B, device=y.device)
+                
+                for i in range(B):
+                    sample_loss = torch.zeros(1, device=y.device)
+
+                    frame_data = frame_weight[i]
+                    for j in range(0, len(frame_data), 3):  # 每 3 個元素為一組 (s, t, fw)
+                        s, t, fw = frame_data[j], frame_data[j+1], frame_data[j+2]
+                        start, end = int(s * T), int(t * T)
+
+                        if start < end:  # 確保區間有效
+                            # 提取當前區間的預測和真實值
+                            segment_y = y[i, :, start:end]  # Shape: (n_feats, end-start)
+                            segment_mu_y = mu_y[i, :, start:end]  # Shape: (n_feats, end-start)
+                            segment_y_mask = y_mask[i, :, start:end]  # Shape: (1, end-start)
+                            
+                            # 計算當前區間的 loss
+                            interval_loss = torch.sum(0.5 * ((segment_y - segment_mu_y) ** 2 + math.log(2 * math.pi)) * segment_y_mask)
+                            
+                            # 加上 frame weight
+                            sample_loss += interval_loss * fw
+
+                    # 加上樣本級別權重
+                    sample_loss *= weights[i]
+                    prior_loss[i] = sample_loss
+
+                # Final prior_loss after considering all segments
+                prior_loss = prior_loss / (torch.sum(y_mask) * self.n_feats)  # Normalize by the number of segments
+            else:
+                prior_loss = torch.sum((0.5 * ((y - mu_y) ** 2 + math.log(2 * math.pi)) * y_mask).permute(1, 2, 0) * weights)
+                prior_loss = prior_loss / (torch.sum(y_mask) * self.n_feats)
         else:
             prior_loss = 0
 

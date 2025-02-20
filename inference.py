@@ -18,11 +18,18 @@ from matcha.hifigan.env import AttrDict
 from matcha.hifigan.models import Generator as HiFiGAN
 # Matcha imports
 from matcha.models.matcha_tts import MatchaTTS
+# from matcha.models.matcha_tts_weight_wav2vec_dynamic import MatchaTTS
 from matcha.text import sequence_to_text, text_to_sequence
 from matcha.utils.model import denormalize
 from matcha.utils.utils import get_user_data_dir, intersperse
 
 def load_model(checkpoint_path, device):
+    # checkpoint = torch.load(checkpoint_path)
+    # model = MatchaTTS()
+    # filtered_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if k in model.state_dict()}
+    # model.load_state_dict(filtered_state_dict, strict=False)
+    # model = model.to(device)
+    
     model = MatchaTTS.load_from_checkpoint(checkpoint_path, map_location=device)
     model.eval()
     return model
@@ -84,13 +91,15 @@ def parse_filelist(filelist_path, split_char="|"):
     return filenames_and_text
 
 if __name__=='__main__':
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
-    MATCHA_CHECKPOINT = "logs/train/matbn/runs/2024-10-20_16-41-44/checkpoints/checkpoint_epoch=299.ckpt"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # 
+    MATCHA_CHECKPOINT = "logs/train/matbn/runs/2025-02-17_11-41-43/checkpoints/checkpoint_epoch=399.ckpt"
     HIFIGAN_CHECKPOINT = "../hifigan/LJ_V1/generator_v1"
     
-    OUTPUT_FOLDER = f"synth_output/{MATCHA_CHECKPOINT.split('/')[-3]}"
+    OUTPUT_FOLDER = f"synth_output/all_test/{MATCHA_CHECKPOINT.split('/')[-3]}"
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-    TEST_PATH = "data/matbn/matbn_test._less_17.txt"
+    TEST_PATH = "data/matbn/matbn_test._less_-1.txt"
     
     count_params = lambda x: f"{sum(p.numel() for p in x.parameters()):,}"
 

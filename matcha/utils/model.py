@@ -51,6 +51,33 @@ def duration_loss_weight(logw, logw_, lengths, weights):
     loss = torch.sum(((logw - logw_) ** 2).permute(1, 2, 0) * weights) / torch.sum(lengths)
     return loss
 
+def duration_loss_weight_frame(logw, logw_, lengths, weights, frame_weight):
+    """
+    計算帶有 frame_level 權重的 duration loss
+    logw, logw_ : 預測與真值 logw
+    lengths : 每個樣本的長度
+    weights : 樣本級別的權重
+    frame_level : (s, t, fw) 形式的權重，s, t 為 0~1 之間的比例，fw 為該範圍的權重
+    """
+    B, _, T = logw.shape  # B 為 batch_size, T 為時間長度
+    loss = torch.zeros(B, device=logw.device)
+    
+    for i in range(B):
+        sample_loss = torch.zeros(1, device=logw.device)
+
+        frame_data = frame_weight[i]
+        for j in range(0, len(frame_data), 3):  # 每 3 個元素為一組
+            s, t, fw = frame_data[j], frame_data[j+1], frame_data[j+2]
+            start, end = int(s * T), int(t * T)
+
+            if start < end:  # 確保區間有效
+                interval_loss = torch.sum(((logw[i, :, start:end] - logw_[i, :, start:end]) ** 2))
+                sample_loss += interval_loss * fw
+        sample_loss *= weights[i]
+        loss[i] = sample_loss
+    
+    return torch.sum(loss) / torch.sum(lengths)
+
 def normalize(data, mu, std):
     if not isinstance(mu, (float, int)):
         if isinstance(mu, list):

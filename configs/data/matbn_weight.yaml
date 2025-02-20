@@ -1,8 +1,8 @@
 _target_: matcha.data.text_mel_datamodule_weight.TextMelDataModule
 name: matbn_weight
-train_filelist_path: data/matbn/matbn_train._less_17_weight_alpha_-1(3.8315858840942383).txt
-valid_filelist_path: data/matbn/matbn_dev_weight.txt
-batch_size: 8
+train_filelist_path: data/matbn/matbn_train_enhanced._less_17_weight_alpha_0.6_aishell3_vq_remove_zero_row.txt
+valid_filelist_path: data/matbn/matbn_dev_weight_unifrom.txt
+batch_size: 6
 num_workers: 20
 pin_memory: True
 cleaners: [parse_ipa]

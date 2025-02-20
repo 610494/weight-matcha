@@ -1,6 +1,6 @@
 _target_: matcha.data.text_mel_datamodule.TextMelDataModule
 name: matbn
-train_filelist_path: data/matbn/default_less_20.txt
+train_filelist_path: data/matbn/default_weight_alpha_10._less_17_remove_zero_row.txt
 valid_filelist_path: data/matbn/matbn_dev.txt
 batch_size: 6
 num_workers: 20
