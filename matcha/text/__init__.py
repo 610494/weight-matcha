@@ -1,13 +1,21 @@
 """ from https://github.com/keithito/tacotron """
 from matcha.text import cleaners
-from matcha.text.symbols import symbols, characters
+from matcha.text.symbols import breezevoice_symbols, characters, symbols
 
 # Mappings from symbol to numeric ID and vice versa:
-# _symbol_to_id = {s: i for i, s in enumerate(symbols)}
-# _id_to_symbol = {i: s for i, s in enumerate(symbols)}  # pylint: disable=unnecessary-comprehension
+_symbol_to_id = {s: i for i, s in enumerate(symbols)}
+_id_to_symbol = {i: s for i, s in enumerate(
+    symbols)}  # pylint: disable=unnecessary-comprehension
 
-_symbol_to_id = {s: i for i, s in enumerate(characters)}
-_id_to_symbol = {i: s for i, s in enumerate(characters)}
+# _symbol_to_id = {s: i for i, s in enumerate(characters)}
+# _id_to_symbol = {i: s for i, s in enumerate(characters)}
+
+_symbol_to_id_bv = {s: i for i, s in enumerate(breezevoice_symbols)}
+_id_to_symbol_bv = {i: s for i, s in enumerate(
+    breezevoice_symbols)}  # pylint: disable=unnecessary-comprehension
+
+_symbol_to_id = _symbol_to_id_bv
+_id_to_symbol = _id_to_symbol_bv
 
 def text_to_sequence(text, cleaner_names):
     """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.

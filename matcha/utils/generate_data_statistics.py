@@ -40,10 +40,12 @@ def compute_data_statistics(data_loader: torch.utils.data.DataLoader, out_channe
         total_mel_len += torch.sum(mel_lengths)
         total_mel_sum += torch.sum(mels)
         total_mel_sq_sum += torch.sum(torch.pow(mels, 2))
+        # print(f'batch: {batch}')
 
     data_mean = total_mel_sum / (total_mel_len * out_channels)
     data_std = torch.sqrt((total_mel_sq_sum / (total_mel_len * out_channels)) - torch.pow(data_mean, 2))
 
+    # print(f'"mel_mean": {data_mean.item()}, "mel_std": {data_std.item()}')
     return {"mel_mean": data_mean.item(), "mel_std": data_std.item()}
 
 

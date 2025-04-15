@@ -6,12 +6,11 @@ import numpy as np
 import torch
 import torchaudio as ta
 from lightning import LightningDataModule
-from torch.utils.data.dataloader import DataLoader
-
 from matcha.text import text_to_sequence
 from matcha.utils.audio import mel_spectrogram
 from matcha.utils.model import fix_len_compatibility, normalize
 from matcha.utils.utils import intersperse
+from torch.utils.data.dataloader import DataLoader
 
 
 def parse_filelist(filelist_path, split_char="|"):
@@ -153,6 +152,7 @@ class TextMelDataset(torch.utils.data.Dataset):
         self.f_min = f_min
         self.f_max = f_max
         self.load_durations = load_durations
+        # torchaudio.set_audio_backend("soundfile")
 
         if data_parameters is not None:
             self.data_parameters = data_parameters
@@ -162,6 +162,7 @@ class TextMelDataset(torch.utils.data.Dataset):
         random.shuffle(self.filepaths_and_text)
 
     def get_datapoint(self, filepath_and_text):
+        # print(f'filepath_and_text: {filepath_and_text}')
         if self.n_spks > 1:
             filepath, spk, text = (
                 filepath_and_text[0],
@@ -198,6 +199,8 @@ class TextMelDataset(torch.utils.data.Dataset):
 
     def get_mel(self, filepath):
         audio, sr = ta.load(filepath)
+        # print(f'filepath: {filepath}')
+        # print(f'audio: {audio}')
         assert sr == self.sample_rate
         mel = mel_spectrogram(
             audio,
@@ -211,9 +214,12 @@ class TextMelDataset(torch.utils.data.Dataset):
             center=False,
         ).squeeze()
         mel = normalize(mel, self.data_parameters["mel_mean"], self.data_parameters["mel_std"])
+        # print(f'mel: {mel}')
         return mel
 
     def get_text(self, text, add_blank=True):
+        # print(f'self.cleaners: {self.cleaners}')
+        # input("")
         text_norm, cleaned_text = text_to_sequence(text, self.cleaners)
         if self.add_blank:
             text_norm = intersperse(text_norm, 0)

@@ -24,13 +24,13 @@ critical_logger.setLevel(logging.CRITICAL)
 # Intializing the phonemizer globally significantly reduces the speed
 # now the phonemizer is not initialising at every call
 # Might be less flexible, but it is much-much faster
-# global_phonemizer = phonemizer.backend.EspeakBackend(
-#     language="en-us",
-#     preserve_punctuation=True,
-#     with_stress=True,
-#     language_switch="remove-flags",
-#     logger=critical_logger,
-# )
+global_phonemizer = phonemizer.backend.EspeakBackend(
+    language="en-us",
+    preserve_punctuation=True,
+    with_stress=True,
+    language_switch="remove-flags",
+    logger=critical_logger,
+)
 
 
 # Regular expression matching whitespace:
@@ -96,11 +96,18 @@ def transliteration_cleaners(text):
 
 
 def english_cleaners2(text):
+    # print(f'ori text: {text}')
     """Pipeline for English text, including abbreviation expansion. + punctuation + stress"""
     text = convert_to_ascii(text)
     text = lowercase(text)
     text = expand_abbreviations(text)
-    phonemes = global_phonemizer.phonemize([text], strip=True, njobs=1)[0]
+    # print(f'text: {text}')
+    # phonemes = global_phonemizer.phonemize([text], strip=True, njobs=1)[0]
+    phonemes_list = global_phonemizer.phonemize([text], strip=True, njobs=1)
+    if not phonemes_list:
+        # print(f"phonemizer 轉換失敗，test: {text}")
+        raise RuntimeError(f"phonemizer 轉換失敗，test: {text}")
+    phonemes = phonemes_list[0]
     phonemes = collapse_whitespace(phonemes)
     return phonemes
 
@@ -126,6 +133,16 @@ def parse_ipa(ipa: str):
             text.extend(word)
 
     return text
+
+def breezevoice(text):
+    text = convert_to_ascii(text)
+    text = lowercase(text)
+    text = expand_abbreviations(text)
+    text = text.replace('"', '')
+    text = re.sub(r'["\[\]]', '', text)
+    
+    return text
+    
 
 # I am removing this due to incompatibility with several version of python
 # However, if you want to use it, you can uncomment it
