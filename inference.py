@@ -18,11 +18,19 @@ from matcha.hifigan.env import AttrDict
 from matcha.hifigan.models import Generator as HiFiGAN
 # Matcha imports
 from matcha.models.matcha_tts import MatchaTTS
+# from matcha.models.matcha_tts_weight_wav2vec_dynamic import MatchaTTS
 from matcha.text import sequence_to_text, text_to_sequence
 from matcha.utils.model import denormalize
 from matcha.utils.utils import get_user_data_dir, intersperse
+from matcha.text.cleaners import english_cleaners2
 
 def load_model(checkpoint_path, device):
+    # checkpoint = torch.load(checkpoint_path)
+    # model = MatchaTTS()
+    # filtered_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if k in model.state_dict()}
+    # model.load_state_dict(filtered_state_dict, strict=False)
+    # model = model.to(device)
+    
     model = MatchaTTS.load_from_checkpoint(checkpoint_path, map_location=device)
     model.eval()
     return model
@@ -73,7 +81,7 @@ def to_waveform(mel, vocoder):
 def save_to_folder(filename: str, output: dict, folder: str):
     folder = Path(folder)
     folder.mkdir(exist_ok=True, parents=True)
-    np.save(folder / f'{filename}', output['mel'].cpu().numpy())
+    # np.save(folder / f'{filename}', output['mel'].cpu().numpy())
     sf.write(folder / f'{filename}.wav', output['waveform'], 22050, 'PCM_24')
 
 def parse_filelist(filelist_path, split_char="|"):
@@ -83,14 +91,30 @@ def parse_filelist(filelist_path, split_char="|"):
         row[0] = os.path.basename(row[0]).rsplit('.',1)[0]
     return filenames_and_text
 
+def parse_filelist_en(filelist_path, split_char="|"):
+    with open(filelist_path, encoding="utf-8") as f:
+        filenames_and_text = [line.strip().split(split_char) for line in f]
+    for row in filenames_and_text:
+        row[0] = os.path.basename(row[0]).rsplit('.',1)[0]
+        row[1] = english_cleaners2(row[1])
+    return filenames_and_text
+
 if __name__=='__main__':
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")   
-    MATCHA_CHECKPOINT = "logs/train/matbn/runs/2024-10-20_16-41-44/checkpoints/checkpoint_epoch=299.ckpt"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # /mnt/md1/user_wago/Matcha-TTS/logs/train/matbn_weight_dynamic/runs/2025-06-23_02-48-25/checkpoints/last.ckpt
+    # /mnt/md1/user_wago/Matcha-TTS/logs/train/matbn_weight_dynamic/runs/2025-06-25_14-28-26/checkpoints/last.ckpt
+    MATCHA_CHECKPOINT = "/mnt/md1/user_wago/Matcha-TTS/logs/train/matbn/runs/2025-07-15_19-18-23/checkpoints/checkpoint_epoch=199.ckpt"
+    
     HIFIGAN_CHECKPOINT = "../hifigan/LJ_V1/generator_v1"
     
-    OUTPUT_FOLDER = f"synth_output/{MATCHA_CHECKPOINT.split('/')[-3]}"
+    # OUTPUT_FOLDER = f"synth_output/LJ_output/{MATCHA_CHECKPOINT.split('/')[-3]}"
+    OUTPUT_FOLDER = f"synth_output/all_test/{MATCHA_CHECKPOINT.split('/')[-3]}"
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-    TEST_PATH = "data/matbn/matbn_test._less_17.txt"
+    TEST_PATH = "LJSpeech_len_free/asru/eval_sentences10.txt"
+    filenames_and_text = parse_filelist_en(TEST_PATH)
+    # TEST_PATH = "data/matbn/matbn_test._less_-1.txt"
+    # filenames_and_text = parse_filelist(TEST_PATH)
     
     count_params = lambda x: f"{sum(p.numel() for p in x.parameters()):,}"
 
@@ -100,11 +124,10 @@ if __name__=='__main__':
     vocoder = load_vocoder(HIFIGAN_CHECKPOINT)
     denoiser = Denoiser(vocoder, mode='zeros')
 
-    filenames_and_text = parse_filelist(TEST_PATH)
+    
     filenames = [i[0] for i in filenames_and_text]
     texts = [i[1] for i in filenames_and_text]
     
-        
     # texts = [
     #     "ɕ-i_55-t-ien_214-t͡ɕ-yn_55-ɕ-iau_51 n-ien_35-t-u_51 ʈ͡ʂ-au_55-ʂ-ɔu_55 tʰ-ai_35-uan_55 ɕ-ye_35-ʂ-əŋ_55 ʈ͡ʂ-ən_55-ʂ-ʅ_51 t͡ɕ-in_55-tʰ-ien_55 t͡ɕ-y_214-ɕ-iŋ_35"
     # ]

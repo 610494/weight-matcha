@@ -117,7 +117,59 @@ class BASECFM(torch.nn.Module, ABC):
         )
         return loss, y
     
-    def compute_loss_weight(self, x1, mask, mu, spks=None, cond=None, weights=None):
+    def compute_loss_weight(self, x1, mask, mu, spks=None, cond=None, weights=None, frame_weight=None):
+        """Computes diffusion loss
+
+        Args:
+            x1 (torch.Tensor): Target
+                shape: (batch_size, n_feats, mel_timesteps)
+            mask (torch.Tensor): target mask
+                shape: (batch_size, 1, mel_timesteps)
+            mu (torch.Tensor): output of encoder
+                shape: (batch_size, n_feats, mel_timesteps)
+            spks (torch.Tensor, optional): speaker embedding. Defaults to None.
+                shape: (batch_size, spk_emb_dim)
+            frame_weight (list, optional): frame-level weight adjustments. Defaults to None.
+
+        Returns:
+            loss: conditional flow matching loss
+            y: conditional flow
+                shape: (batch_size, n_feats, mel_timesteps)
+        """
+        b, _, t = mu.shape
+
+        # random timestep
+        t = torch.rand([b, 1, 1], device=mu.device, dtype=mu.dtype)
+        # sample noise p(x_0)
+        z = torch.randn_like(x1)
+
+        y = (1 - (1 - self.sigma_min) * t) * z + t * x1
+        u = x1 - (1 - self.sigma_min) * z
+
+        pred_u = self.estimator(y, mask, mu, t.squeeze(), spks)
+        
+        if frame_weight is not None:
+            loss = torch.zeros(b, device=mu.device)
+            for i in range(b):
+                sample_loss = torch.zeros(1, device=mu.device)
+                frame_data = frame_weight[i]
+                
+                for j in range(0, len(frame_data), 3):  # 每 3 個元素為一組
+                    s, t, fw = frame_data[j], frame_data[j+1], frame_data[j+2]
+                    start, end = int(s * u.shape[-1]), int(t * u.shape[-1])
+                    
+                    if start < end:
+                        interval_loss = torch.sum(((pred_u[i, :, start:end] - u[i, :, start:end]) ** 2))
+                        sample_loss += interval_loss * fw
+                loss[i] = sample_loss * weights[i]   
+            loss = torch.sum(loss) / (torch.sum(mask) * u.shape[1])
+        else:
+            loss = torch.sum(((pred_u - u) ** 2).permute(1, 2, 0) * weights) / (
+                torch.sum(mask) * u.shape[1]
+            )
+        return loss, y
+
+    def compute_loss_sample(self, x1, mask, mu, spks=None, cond=None):
         """Computes diffusion loss
 
         Args:
@@ -145,16 +197,16 @@ class BASECFM(torch.nn.Module, ABC):
         y = (1 - (1 - self.sigma_min) * t) * z + t * x1
         u = x1 - (1 - self.sigma_min) * z
 
-        pred_u = self.estimator(y, mask, mu, t.squeeze(), spks)
-        # print(f'pred_u.shape: {pred_u.shape}')
-        # print(f'mask.shape: {mask.shape}')
-        # print(f'u.shape[1]: {u.shape[1]}')
-        loss = torch.sum(((pred_u - u) ** 2).permute(1, 2, 0) * weights) / (
+        loss = F.mse_loss(
+            self.estimator(y, mask, mu, t.squeeze(), spks), u, reduction="none"
+        ).sum(dim=[1, 2]) / (
             torch.sum(mask) * u.shape[1]
         )
-        # loss = F.mse_loss(pred_u, u, reduction="sum") / (
+        
+        # loss = F.mse_loss(self.estimator(y, mask, mu, t.squeeze(), spks), u, reduction="sum") / (
         #     torch.sum(mask) * u.shape[1]
         # )
+        
         return loss, y
 
 

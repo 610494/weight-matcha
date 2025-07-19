@@ -94,13 +94,19 @@ def transliteration_cleaners(text):
     text = collapse_whitespace(text)
     return text
 
-
+from g2p_en import G2p
+g2p = G2p()
 def english_cleaners2(text):
     """Pipeline for English text, including abbreviation expansion. + punctuation + stress"""
     text = convert_to_ascii(text)
     text = lowercase(text)
     text = expand_abbreviations(text)
-    phonemes = global_phonemizer.phonemize([text], strip=True, njobs=1)[0]
+    # phonemes = global_phonemizer.phonemize([text], strip=True, njobs=1)[0]
+    # print(f'text: {text}')
+    phonemes = g2p(text)
+    phonemes = " ".join(phonemes)
+    # print(f'phonemes: {phonemes}')
+    # input("")
     phonemes = collapse_whitespace(phonemes)
     return phonemes
 

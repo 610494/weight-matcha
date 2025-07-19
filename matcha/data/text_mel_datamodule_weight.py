@@ -161,14 +161,10 @@ class TextMelDataset(torch.utils.data.Dataset):
         random.seed(seed)
         random.shuffle(self.filepaths_and_text_and_weight)
 
-    def get_datapoint(self, filepaths_and_text_and_weight):
+    def get_datapoint(self, filepaths_and_text_and_weight, index):
         if self.n_spks > 1:
-            filepath, spk, text = (
-                filepaths_and_text_and_weight[0],
-                int(filepaths_and_text_and_weight[1]),
-                filepaths_and_text_and_weight[2],
-                float(filepaths_and_text_and_weight[3]),
-            )
+            filepath, text, weight = filepaths_and_text_and_weight[0], filepaths_and_text_and_weight[1], float(filepaths_and_text_and_weight[2])
+            spk = index
         else:
             filepath, text, weight = filepaths_and_text_and_weight[0], filepaths_and_text_and_weight[1], float(filepaths_and_text_and_weight[2])
             spk = None
@@ -222,7 +218,7 @@ class TextMelDataset(torch.utils.data.Dataset):
         return text_norm, cleaned_text
 
     def __getitem__(self, index):
-        datapoint = self.get_datapoint(self.filepaths_and_text_and_weight[index])
+        datapoint = self.get_datapoint(self.filepaths_and_text_and_weight[index], index)
         return datapoint
 
     def __len__(self):

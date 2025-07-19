@@ -1,26 +1,43 @@
 _target_: matcha.data.text_mel_datamodule_weight.TextMelDataModule
 name: matbn_weight
-train_filelist_path: data/matbn/matbn_train._less_17_weight_alpha_-1(3.8315858840942383).txt
-valid_filelist_path: data/matbn/matbn_dev_weight.txt
-batch_size: 8
+# LJSpeech_train_new_distortion_60_percen_SNR_10dB_db_loss_weight_1-1_div_10.059061050415039_x.txt
+train_filelist_path: LJSpeech_len_free/asru/LJSpeech_train_new_distortion_60_percen_SNR_10dB_db_loss_weight_1-1_div_10.059061050415039_x.txt
+valid_filelist_path: LJSpeech_len_free/asru/LJSpeech_val_distortion_0_percen_loss_weight_1-1_div_0.5_x.txt
+batch_size: 16
 num_workers: 20
 pin_memory: True
-cleaners: [parse_ipa]
+cleaners: [english_cleaners2]
 add_blank: True
-n_spks: 1
+n_spks: 12600
 n_fft: 1024
 n_feats: 80
-sample_rate: 16000
+sample_rate: 22050
 hop_length: 256
 win_length: 1024
 f_min: 0
 f_max: 8000
-data_statistics:  # Computed for ljspeech dataset
-  mel_mean: -4.496236324310303
-  mel_std: 1.6519367694854736
+data_statistics: 
+# #Computed for LJ
+#   mel_mean: -5.536622
+#   mel_std: 2.116101
+#Computed for LJ FNG
+  # mel_mean: -5.3298234939575195
+  # mel_std: 2.0555686950683594
+# # Computed for LJ BNG
+  mel_mean: -4.930920124053955
+  mel_std: 1.91646409034729
+# Computed for matbn E
+  # mel_mean: -4.496236324310303
+  # mel_std: 1.6519367694854736
 # {default_weight_alpha_10_th_0.8_utf8: 'mel_mean': -4.740914344787598, 'mel_std': 1.7401396036148071}
 # default_weight_alpha_10_th_0.8_utf8._less_20: {'mel_mean': -4.7291693687438965, 'mel_std': 1.7484663724899292}
 # default {'mel_mean': -4.513371467590332, 'mel_std': 1.6552149057388306}
 # matbn_train._less_17_weight_alpha_-1(3.8315858840942383) {'mel_mean': -4.496236324310303, 'mel_std': 1.6519367694854736} 
+# for 40 LJ 10db
+  # mel_mean: -4.496236324310303
+  # mel_std: 1.6519367694854736
+# for 20 LJ 10db
+  # mel_mean: -5.322432518005371
+  # mel_std: 2.0355145931243896
 seed: ${seed}
 load_durations: false

@@ -41,9 +41,17 @@ train-matbn: ## Train the model
 train-matbn-weight: ## Train the model
 	python matcha/train_weight.py experiment=matbn_weight
 
+train-matbn-weight-frame: ## Train the model
+	python matcha/train_weight_frame.py experiment=matbn_weight_frame
+
 train-matbn-weight-curriculum: ## Train the model
 	python matcha/train_weight_curriculum.py experiment=matbn_weight_curriculum
 
+train-matbn-weight-wav2vec-dynamic: ## Train the model
+	python matcha/train_weight_wav2vec_dynamic.py experiment=matbn_weight_wav2vec_dynamic
+
+train-matbn-weight-dynamic: ## Train the model
+	python matcha/train_weight_dynamic.py experiment=matbn_weight_dynamic > matbn_weight_dynamic_2.txt
 
 train-ljspeech-min: ## Train the model with minimum memory
 	python matcha/train.py experiment=ljspeech_min_memory
